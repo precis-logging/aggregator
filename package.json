@@ -1,0 +1,35 @@
+{
+  "name": "precis-aggregator",
+  "version": "0.0.1",
+  "description": "Precis Aggregator creates aggregates from flowing logs",
+  "main": "server.js",
+  "scripts": {
+    "test": "./node_modules/mocha/bin/mocha test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:precis-logging/aggregator.git"
+  },
+  "keywords": [
+    "Log",
+    "aggregator"
+  ],
+  "author": "Jeremy Darling <Jeremy.Darling@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/precis-logging/aggregator/issues"
+  },
+  "homepage": "https://github.com/precis-logging/aggregator",
+  "dependencies": {
+    "async": "^0.9.0",
+    "hapi": "^8.2.0",
+    "heapdump": "^0.3.5",
+    "memwatch": "^0.2.2",
+    "mongo-oplog": "^0.1.6",
+    "npm": "^2.7.1",
+    "sift": "^1.1.0"
+  },
+  "devDependencies": {
+    "mocha": "^2.2.1"
+  }
+}
