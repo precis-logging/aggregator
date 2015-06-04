@@ -1,5 +1,8 @@
-var memwatch = require('memwatch');
-var heapdump = require('heapdump');
+try{
+  var memwatch = require('memwatch');
+  var heapdump = require('heapdump');
+}catch(e){
+}
 
 var fs = require('fs');
 var path = require('path');
@@ -43,19 +46,21 @@ try{
   fs.mkdirSync('./logs');
 }catch(e){}
 
-memwatch.on('leak', function(info) {
-  logger.error(info);
-  var file = './logs/' + process.pid + '-' + Date.now() + '.heapsnapshot';
-  heapdump.writeSnapshot(file, function(err){
-    if(err){
-      logger.error(err);
-    }else{
-      logger.error('Wrote snapshot: ' + file);
-    }
+try{
+  memwatch.on('leak', function(info) {
+    logger.error(info);
+    var file = './logs/' + process.pid + '-' + Date.now() + '.heapsnapshot';
+    heapdump.writeSnapshot(file, function(err){
+      if(err){
+        logger.error(err);
+      }else{
+        logger.error('Wrote snapshot: ' + file);
+      }
+    });
   });
-});
-
-
+}catch(e){
+  logger.error('Memwatch not enabled');
+}
 //var statStore = new DummyCollection();
 
 var encode = function(source){
@@ -140,7 +145,7 @@ server.route([
       method: 'GET',
       path: '/api/v1/aggregates',
       handler: function(request, reply){
-        statStore.asArray(request.query, function(err, arr){
+        statsStore.asArray(request.query, function(err, arr){
           return reply(err||arr);
         });
       }
@@ -152,7 +157,7 @@ server.route([
         var path = request.params.name instanceof Array?request.params.name.join('/'):request.params.name;
         var re = new RegExp(request.params.name, 'i');
         request.query.filter = reformFilter(utils.defaults({$or: [{name: re}, {key: re}]}, request.query.filter));
-        statStore.asArray(request.query, function(err, arr){
+        statsStore.asArray(request.query, function(err, arr){
           return reply(err||arr);
         });
       }
@@ -162,7 +167,7 @@ server.route([
       path: '/api/v1/aggregate/{id}',
       handler: function(request, reply){
         request.query.filter = reformFilter(utils.defaults({_id: request.params.id}, request.query.filter));
-        statStore.asArray(request.query, function(err, arr){
+        statsStore.asArray(request.query, function(err, arr){
           return reply(err||arr[0]);
         });
       }
