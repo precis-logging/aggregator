@@ -15,16 +15,16 @@ var logger = require('./lib/logger');
 var utils = require('./lib/utils');
 var config = require('./lib/config');
 //var storeConfig = config.store;
-var Aggregator = require('./lib/aggregate').Aggregator;
+var Handler = require('./lib/handler').Handler;
 var Oplog = require('mongo-oplog');
 var Timestamp = require('mongodb').Timestamp;
 var Bus = require('./plugins/bus').Bus;
 
-var statsStore = require('./lib/store');
+var store = require('./lib/store');
 //var Store = require('./plugins/store');
 var webroot = path.join(__dirname, (config.web||{}).site||'/webroot');
 var server = require('./lib/server');
-var stats = require('./stats.js');
+//var stats = require('./stats.js');
 var sift = require('sift');
 
 var reIsFunction = /function\s*[]*\s\(([^)]+)\)*/;
@@ -108,10 +108,11 @@ var encode = function(source){
   }
 };
 
-var agg = new Aggregator({
+var handler = new Handler({
   logger: logger,
-  stats: stats,
-  store: statsStore
+  //stats: stats,
+  config: config,
+  store: store//statsStore
 });
 
 server.route([
@@ -124,6 +125,7 @@ server.route([
         }
       }
     },
+    /*
     {
       method: 'GET',
       path: '/api/v1/aggregations',
@@ -172,6 +174,7 @@ server.route([
         });
       }
     },
+    */
   ]);
 
 var bus = new Bus(config.bus);
@@ -181,7 +184,7 @@ bus.on('started', function(){
 });
 
 bus.on('event', function(data){
-  agg.push(data);
+  handler.push(data);
 });
 
 bus.on('stopped', function(){

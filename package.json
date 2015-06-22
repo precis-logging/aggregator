@@ -1,25 +1,25 @@
 {
-  "name": "precis-aggregator",
+  "name": "precis-conversation-tracker",
   "version": "0.0.1",
-  "description": "Precis Aggregator creates aggregates from flowing logs",
+  "description": "Precis Conversation Tracker groups log enries based on a conversationId value in the logs",
   "main": "server.js",
   "scripts": {
     "test": "./node_modules/mocha/bin/mocha test"
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:precis-logging/aggregator.git"
+    "url": "git@github.com:precis-logging/conversation-tracker.git"
   },
   "keywords": [
     "Log",
-    "aggregator"
+    "Conversation Tracking"
   ],
   "author": "Jeremy Darling <Jeremy.Darling@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/precis-logging/aggregator/issues"
+    "url": "https://github.com/precis-logging/conversation-tracker/issues"
   },
-  "homepage": "https://github.com/precis-logging/aggregator",
+  "homepage": "https://github.com/precis-logging/conversation-tracker",
   "dependencies": {
     "async": "^0.9.0",
     "hapi": "^8.2.0",
