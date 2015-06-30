@@ -4,10 +4,23 @@ var Oplog = require('mongo-oplog');
 var Timestamp = require('mongodb').Timestamp;
 
 var getStartTime = function(options){
-  var startFrom = options.startFrom || new Date();
-  startFrom.setMinutes(0);
-  startFrom.setSeconds(0);
-  startFrom.setMilliseconds(0);
+  if(!options || !options.startFrom){
+    var startFrom = new Date();
+    //startFrom.setMinutes(0);
+    startFrom.setSeconds(0);
+    startFrom.setMilliseconds(0);
+    console.log('Start: ', startFrom);
+    return new Timestamp(0, startFrom.getTime() / 1000);
+  }
+  var startFrom = new Date(options.startFrom) || (function(){
+    var startFrom = new Date();
+    startFrom.setMinutes(0);
+    startFrom.setSeconds(0);
+    startFrom.setMilliseconds(0);
+    console.log('Start: ', startFrom);
+    return new Timestamp(0, startFrom.getTime() / 1000);
+  });
+  console.log('Start: ', startFrom);
   return new Timestamp(0, startFrom.getTime() / 1000);
 };
 

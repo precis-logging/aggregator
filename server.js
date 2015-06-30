@@ -16,16 +16,16 @@ var logger = require('./lib/logger');
 var utils = require('./lib/utils');
 var config = require('./lib/config');
 //var storeConfig = config.store;
-var Aggregator = require('./lib/aggregate').Aggregator;
+var Handler = require('./lib/handler').Handler;
 var Oplog = require('mongo-oplog');
 var Timestamp = require('mongodb').Timestamp;
 var Bus = require('./plugins/bus').Bus;
 
-var statsStore = require('./lib/store');
+var store = require('./lib/store');
 //var Store = require('./plugins/store');
 var webroot = path.join(__dirname, (config.web||{}).site||'/webroot');
 var server = require('./lib/server');
-var stats = require('./stats.js');
+//var stats = require('./stats.js');
 var sift = require('sift');
 
 var reIsFunction = /function\s*[]*\s\(([^)]+)\)*/;
@@ -109,11 +109,68 @@ var encode = function(source){
   }
 };
 
-var agg = new Aggregator({
+var handler = new Handler({
   logger: logger,
-  stats: stats,
-  store: statsStore
+  //stats: stats,
+  config: config,
+  store: store//statsStore
 });
+
+var getConversations = function(req, reply){
+  store.asArray(req.query, function(err, records){
+    return reply(err || records);
+  });
+};
+
+var getConversation = function(req, reply){
+  store.asArray({filter: {conversationId: req.params.id}}, function(err, record){
+    return reply(err || record);
+  })
+};
+
+var getSlowConversations = function(req, reply){
+  var options = {filter: {'durations.total': {$gte: parseInt(req.query.duration)||1000}}};
+  options = utils.makeFilter(utils.defaults(options, req.query));
+  store.asArray(options, function(err, response){
+    return reply(err || response);
+  });
+};
+
+var getConversationsRatio = function(req, reply){
+  var since = req.params.start;
+  var options = {filter: {'records.time': {$gte: since}}};
+  var slowDuration = parseInt(req.query.duration)||1000;
+
+  options = utils.makeFilter(utils.defaults(options, req.query));
+  store.asArray(options, function(err, block){
+    if(err){
+      return reply(err);
+    }
+    var totalCount = block.length;
+    options.filter['durations.total'] = {$gte: slowDuration};
+    store.asArray(options, function(err, block){
+      if(err){
+        return reply(err);
+      }
+      return reply({
+        slow: block.length,
+        total: totalCount,
+        percent: (block.length/totalCount)*100,
+      });
+    });
+  });
+};
+
+var getProcessedCount = function(req, reply){
+  return reply(handler.stats);/*{
+      inserting: handler.inserting,
+      inserted: handler.inserted,
+      updating: handler.updating,
+      updated: handler.updated,
+      processing: handler.processing,
+      processed: handler.processed
+    });*/
+};
 
 server.route([
     {
@@ -127,51 +184,28 @@ server.route([
     },
     {
       method: 'GET',
-      path: '/api/v1/aggregations',
-      handler: function(request, reply){
-        return reply(encode(agg.stats));
-      }
+      path: '/api/v1/conversations',
+      handler: getConversations
     },
     {
       method: 'GET',
-      path: '/api/v1/aggregations/{name*}',
-      handler: function(request, reply){
-        var path = request.params.name instanceof Array?request.params.name.join('/'):request.params.name;
-        var re = new RegExp(request.params.name, 'i');
-        var filtered = sift({$or: [{name: re}, {key: re}]}, agg.stats);
-        return reply(filtered);
-      }
+      path: '/api/v1/conversation/{id}',
+      handler: getConversation
     },
     {
       method: 'GET',
-      path: '/api/v1/aggregates',
-      handler: function(request, reply){
-        statsStore.asArray(request.query, function(err, arr){
-          return reply(err||arr);
-        });
-      }
+      path: '/api/v1/conversations/slow',
+      handler: getSlowConversations
     },
     {
       method: 'GET',
-      path: '/api/v1/aggregates/{name}',
-      handler: function(request, reply){
-        var path = request.params.name instanceof Array?request.params.name.join('/'):request.params.name;
-        var re = new RegExp(request.params.name, 'i');
-        request.query.filter = reformFilter(utils.defaults({$or: [{name: re}, {key: re}]}, request.query.filter));
-        statsStore.asArray(request.query, function(err, arr){
-          return reply(err||arr);
-        });
-      }
+      path: '/api/v1/conversations/ratio/{start}',
+      handler: getConversationsRatio
     },
     {
       method: 'GET',
-      path: '/api/v1/aggregate/{id}',
-      handler: function(request, reply){
-        request.query.filter = reformFilter(utils.defaults({_id: request.params.id}, request.query.filter));
-        statsStore.asArray(request.query, function(err, arr){
-          return reply(err||arr[0]);
-        });
-      }
+      path: '/api/v1/processed',
+      handler: getProcessedCount
     },
   ]);
 
@@ -182,7 +216,7 @@ bus.on('started', function(){
 });
 
 bus.on('event', function(data){
-  agg.push(data);
+  handler.push(data);
 });
 
 bus.on('stopped', function(){
