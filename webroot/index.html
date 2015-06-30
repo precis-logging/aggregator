@@ -1,4 +1,371 @@
 <html>
+  <head>
+    <style>
+      h3{
+        margin-bottom: 0;
+        border-bottom: 1px solid #006699;
+      }
+      .error{
+        color: red;
+        font-weight: bolder;
+      }
+      .datagrid table { border-collapse: collapse; text-align: left; width: 100%; } .datagrid {font: normal 12px/150% Arial, Helvetica, sans-serif; background: #fff; overflow: hidden; border: 1px solid #006699; -webkit-border-radius: 3px; -moz-border-radius: 3px; border-radius: 3px; }.datagrid table td, .datagrid table th { padding: 3px 10px; }.datagrid table thead th {background:-webkit-gradient( linear, left top, left bottom, color-stop(0.05, #006699), color-stop(1, #00557F) );background:-moz-linear-gradient( center top, #006699 5%, #00557F 100% );filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#006699', endColorstr='#00557F');background-color:#006699; color:#FFFFFF; font-size: 15px; font-weight: bold; border-left: 1px solid #0070A8; } .datagrid table thead th:first-child { border: none; }.datagrid table tbody td { color: #000000; border-left: 1px solid #E1EEF4;font-size: 12px;font-weight: normal; }.datagrid table tbody tr:nth-child(even) td { background: #E1EEf4; color: #000000; }.datagrid table tbody td:first-child { border-left: none; }.datagrid table tbody tr:last-child td { border-bottom: none; }.datagrid table tfoot td div { border-top: 1px solid #006699;background: #E1EEf4;} .datagrid table tfoot td { padding: 0; font-size: 12px } .datagrid table tfoot td div{ padding: 2px; }.datagrid table tfoot td ul { margin: 0; padding:0; list-style: none; text-align: right; }.datagrid table tfoot  li { display: inline; }.datagrid table tfoot li a { text-decoration: none; display: inline-block;  padding: 2px 8px; margin: 1px;color: #FFFFFF;border: 1px solid #006699;-webkit-border-radius: 3px; -moz-border-radius: 3px; border-radius: 3px; background:-webkit-gradient( linear, left top, left bottom, color-stop(0.05, #006699), color-stop(1, #00557F) );background:-moz-linear-gradient( center top, #006699 5%, #00557F 100% );filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#006699', endColorstr='#00557F');background-color:#006699; }.datagrid table tfoot ul.active, .datagrid table tfoot ul a:hover { text-decoration: none;border-color: #00557F; color: #FFFFFF; background: none; background-color:#006699;}div.dhtmlx_window_active, div.dhx_modal_cover_dv { position: fixed !important; }
+    </style>
+  </head>
   <body>
+    <div>
+      <h3>Processed</h3>
+      <div>Processing: <span id="processed-processing"></span></div>
+      <div>Processed: <span id="processed-processed"></span></div>
+      <div>Inserting: <span id="processed-inserting"></span></div>
+      <div>Inserted: <span id="processed-inserted"></span></div>
+      <div>Updating: <span id="processed-updating"></span></div>
+      <div>Updated: <span id="processed-updated"></span></div>
+      <div>Errors: <span id="processed-errors"></span></div>
+
+      <h3>Last 1 Minute</h3>
+      <div>Slow: <span id="last1-slow"></span></div>
+      <div>Total: <span id="last1-total"></span></div>
+      <div>Percent Slow: <span id="last1-percent"></span>%</div>
+
+      <h3>Last 5 Minutes</h3>
+      <div>Slow: <span id="last5-slow"></span></div>
+      <div>Total: <span id="last5-total"></span></div>
+      <div>Percent Slow: <span id="last5-percent"></span>%</div>
+
+      <h3>Last 15 Minutes</h3>
+      <div>Slow: <span id="last15-slow"></span></div>
+      <div>Total: <span id="last15-total"></span></div>
+      <div>Percent Slow: <span id="last15-percent"></span>%</div>
+
+      <h3>Slowest in last 10 Minutes</h3>
+      <div class="datagrid">
+        <table id="slowest">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Conversation ID</th>
+              <th>URL</th>
+              <th>Total</th>
+              <th>Outbound</th>
+              <th>Inbound</th>
+              <th>Overhead</th>
+            </tr>
+          </thead>
+          <tbody>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <script type="text/javascript">
+    var Loader = {};
+    var callhashlist = [], callbacks = [];
+
+    Loader.dataTypes={
+      'json': 'application/json',
+      'jsonp': 'application/json'
+    };
+
+    var addCallback = function(hash, callback){
+      var idx = callhashlist.indexOf(hash), found = idx>-1;
+      if(!found){
+        idx = callhashlist.length;
+        callhashlist[idx] = hash;
+        callbacks[idx]=[];
+      }
+      callbacks[idx].push(callback);
+      return found;
+    };
+
+    var callCallbacks = function(hash, err, results){
+      var idx = callhashlist.indexOf(hash), cbs, i, l;
+      if(idx>-1){
+        cbs = (callbacks.splice(idx, 1)||[])[0]||[];
+        callhashlist.splice(idx, 1);
+        l = cbs.length;
+        for(i=0; i<l; i++){
+          cbs[i](err, results);
+        }
+      };
+    };
+
+    var RemoteRequest = function(){
+      if (window.ActiveXObject){
+        var activexmodes=["Msxml2.XMLHTTP", "Microsoft.XMLHTTP"];
+        for (var i=0; i<activexmodes.length; i++){
+          try{
+            return new ActiveXObject(activexmodes[i])
+          }catch(e){
+            //suppress error
+          }
+        }
+      }
+      if (window.XMLHttpRequest){
+        return new XMLHttpRequest()
+      }
+      return false
+    };
+
+    var encodeParams = function(args){
+      var key, s=[], i, l;
+      var addParam = function(key, value){
+        value = value instanceof Function?value():(value===null?'':value);
+        s[s.length]=encodeURIComponent(key)+'='+encodeURIComponent(value);
+      };
+      if(args instanceof Array){
+        l = args.length;
+        for(i=0; i<l; i++){
+          addParam(args[i].name, args[i].value);
+        }
+      }else if(args){
+        for(key in args){
+          addParam(key, args[key]);
+        }
+      }
+      return s.join('&').replace(/%20/g, '+');
+    };
+
+    var defineMethod = function(HTTPMethod){
+      Loader[HTTPMethod] = function(resourceURI, options, callback){
+        var getParams='', requestData, callHash, url = resourceURI;
+        var requestObject, response, items, body, dataType;
+        if(typeof(options)==='function'){
+          callback = options;
+          options = {};
+        }
+        callback=callback||function(){};
+        options=options||{};
+        if(typeof(options.uri)==='string'){
+          try{
+            options.uri=JSON.parse(options.uri);
+          }catch(e){}
+        }
+        options.uri=options.uri||{};
+        callHash = resourceURI+JSON.stringify(options.uri)+JSON.stringify(options.data);
+        if(!addCallback(callHash, callback)){
+          options.uri.ts = new Date();
+          url += ((url||'').indexOf('?')===-1?'?':'&') + encodeParams(options.uri);
+          requestObject = new RemoteRequest();
+
+          requestObject.onreadystatechange=function(){
+            if(requestObject.readyState===4){
+              if (requestObject.status===200 || window.location.href.indexOf("http")===-1){
+                try{
+                  response = JSON.parse(requestObject.responseText);
+                }catch(e){
+                  response = requestObject.responseText;
+                }
+                if(response.error||response.errors){
+                  callCallbacks(callHash, response);
+                }else{
+                  items=response[response.root];
+                  try{
+                    response = (items instanceof Array)?{
+                      items: items,
+                      offset: response.offset,
+                      limit: response.limit,
+                      count: response.count||items.length,
+                      length: response.length||items.length
+                    }:items||response;
+                  }catch(e){
+                  }
+                  callCallbacks(callHash, null, response);
+                }
+              }else{
+                var err = new Error(requestObject.statusText+': '+(requestObject.responseText||requestObject.response));
+                err.type = requestObject.statusText;
+                err.code = requestObject.status;
+                err.requestObject = requestObject;
+                callCallbacks(callHash, err);
+              }
+            }
+          };
+
+          requestObject.open(HTTPMethod.toUpperCase(), url, true);
+          if(options.data){
+            dataType=Loader.dataTypes[options.dataType]||options.dataType||"application/json";
+            if(options.data instanceof FormData){
+              body = options.data;
+            }else{
+              requestObject.setRequestHeader("Content-type", dataType);
+              try{
+                body = JSON.stringify(options.data);
+              }catch(e){
+                body = options.body;
+              };
+            }
+            if(options.headers){
+              (function(){
+                var key;
+                for(key in options.headers){
+                  try{
+                    requestObject.setRequestHeader(key, options.headers[key]);
+                  }catch(e){}
+                }
+              })();
+            }
+            requestObject.send(body);
+          }else{
+            requestObject.send(null);
+          }
+        }
+      };
+    };
+
+    Loader.form = function(method, form, callback){
+      var formData = new FormData(form);
+
+      var callHash = form.action + (new Date()).getTime();
+      if(!addCallback(callHash, callback)){
+        var requestObject = new RemoteRequest();
+        requestObject.onreadystatechange=function(){
+          if(requestObject.readyState===4){
+            if (requestObject.status===200 || window.location.href.indexOf("http")===-1){
+              try{
+                response = JSON.parse(requestObject.responseText);
+              }catch(e){
+                response = requestObject.responseText;
+              }
+              if(response.error||response.errors){
+                callCallbacks(callHash, response);
+              }else{
+                items=response[response.root];
+                try{
+                  response = (items instanceof Array)?{
+                    items: items,
+                    offset: response.offset,
+                    limit: response.limit,
+                    count: response.count,
+                    length: items.length
+                  }:items||response;
+                }catch(e){
+                }
+                callCallbacks(callHash, null, response);
+              }
+            }else{
+              var err = new Error(requestObject.statusText+': '+(requestObject.responseText||requestObject.response));
+              err.type = requestObject.statusText;
+              err.code = requestObject.status;
+              err.requestObject = requestObject;
+              callCallbacks(callHash, err);
+            }
+          }
+        };
+        requestObject.open(method.toUpperCase(), form.action, true);
+        requestObject.send(formData);
+      }
+      return false;
+    };
+
+    Loader.postForm = function(form, callback){
+      Loader.form('POST', form, callback);
+    };
+
+    Loader.putForm = function(form, callback){
+      Loader.form('PUT', form, callback);
+    };
+
+    (function(methods, callback){
+      var i, l=methods.length;
+      for(i=0; i<l; i++){
+        callback(methods[i]);
+      }
+    })(['get', 'post', 'put', 'patch', 'delete'], defineMethod);
+
+
+    var addCommas = function(x) {
+      var parts = x.toString().split(".");
+      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      return parts.join(".");
+    };
+
+    var displayStat = function(name, val){
+      var value = +val;
+      var elem = document.querySelector('#'+name);
+      if(!elem){
+        return;
+      }
+      elem.innerHTML = addCommas(Math.round(value*100)/100);
+      if(name.match(/percent$/)){
+        document.querySelector('#'+name).className = value>=1?'error':'normal';
+      }
+    };
+    var getStats = function(since, key, callback){
+      Loader.get('/api/v1/conversations/ratio/'+since.toISOString(), function(err, stats){
+        if(err){
+          alert(err);
+          console.error(err);
+          return callback(err);
+        }
+        Object.keys(stats).forEach(function(statName){
+          displayStat(key + '-' + statName, stats[statName]);
+        });
+        return callback(null, stats);
+      });
+    };
+    var getProcessedInfo = function(callback){
+      Loader.get('/api/v1/processed', function(err, stats){
+        if(err){
+          alert(err);
+          console.error(err);
+          return callback(err);
+        }
+        Object.keys(stats).forEach(function(statName){
+          displayStat('processed-' + statName, stats[statName]);
+        });
+        return callback(null, stats);
+      });
+    };
+    var getSlowListing = function(callback){
+      var uri = 'http://localhost:9393/api/v1/conversations?sort[durations.total]=-1&filter[durations.total][$gte]=1000&limit=15&filter[records.time][$gte]=';
+      var since = new Date();
+      since.setMinutes(since.getMinutes()-10);
+      Loader.get(uri+since.toISOString(), function(err, info){
+        if(err){
+          alert(err);
+          console.error(err);
+          return callback(err);
+        }
+        var container = document.querySelector('table#slowest tbody');
+
+        var fragment = '<tr>'+info.items.map(function(doc, index){
+          var inbound = doc.records.filter(function(rec){
+              return rec.direction === 'inbound';
+            }).map(function(rec){
+              return rec.url;
+            });
+          var url = inbound.join(', ');
+          var frag =  '<td>'+(index+1)+'</td>'+
+                      '<td>'+doc.conversationId+'</td>'+
+                      '<td>'+url+'</td>'+
+                      '<td>'+doc.durations.total+'</td>'+
+                      '<td>'+doc.durations.outbound+'</td>'+
+                      '<td>'+doc.durations.inbound+'</td>'+
+                      '<td>'+doc.durations.overhead+'</td>';
+          return frag;
+        }).join('</tr><tr>')+'</tr>';
+        container.innerHTML = fragment;
+        return callback(null, info);
+      });
+    };
+    var doIt = function(){
+      var since = new Date();
+      since.setMinutes(since.getMinutes()-1);
+      getStats(since, 'last1', function(){
+        since.setMinutes(since.getMinutes()-4);
+        getStats(since, 'last5', function(){
+          since.setMinutes(since.getMinutes()-10);
+          getStats(since, 'last15', function(){
+            getProcessedInfo(function(){
+              getSlowListing(function(){
+                setTimeout(doIt, 5000);
+              });
+            });
+          });
+        });
+      });
+    };
+    doIt();
+    </script>
   </body>
 </html>
