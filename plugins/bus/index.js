@@ -6,21 +6,20 @@ var Timestamp = require('mongodb').Timestamp;
 var getStartTime = function(options){
   if(!options || !options.startFrom){
     var startFrom = new Date();
-    //startFrom.setMinutes(0);
+    startFrom.setMinutes(0);
     startFrom.setSeconds(0);
     startFrom.setMilliseconds(0);
     console.log('Start: ', startFrom);
-    return new Timestamp(0, startFrom.getTime() / 1000);
+    return startFrom;
   }
   var startFrom = new Date(options.startFrom) || (function(){
     var startFrom = new Date();
     startFrom.setMinutes(0);
     startFrom.setSeconds(0);
     startFrom.setMilliseconds(0);
-    console.log('Start: ', startFrom);
-    return new Timestamp(0, startFrom.getTime() / 1000);
+    return startFrom;
   });
-  console.log('Start: ', startFrom);
+  console.log('Start: ', options.startFrom, startFrom);
   return new Timestamp(0, startFrom.getTime() / 1000);
 };
 
