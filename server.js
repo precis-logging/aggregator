@@ -1,3 +1,4 @@
+/**/
 try{
   var memwatch = require('memwatch');
   var heapdump = require('heapdump');
