@@ -334,6 +334,9 @@ var registerUi = function(){
 };
 
 var Plugin = function(options){
+};
+
+Plugin.prototype.init = function(options){
   var logger = options.logger;
   var config = options.config || {};
   var server = options.server;
@@ -351,9 +354,14 @@ var Plugin = function(options){
       stats: stats.filter(notDeleted),
     });
   }.bind(this));
+};
 
-  server.route(routes.call(this));
-  ui.register(registerUi.call(this));
+Plugin.prototype.register = function(options){
+  var register = options.register;
+  register({
+    ui: registerUi.call(this),
+    server: routes.call(this)
+  });
 };
 
 Plugin.prototype.push = function(record){
