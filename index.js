@@ -359,6 +359,7 @@ Plugin.prototype.init = function(options){
 Plugin.prototype.register = function(options){
   var register = options.register;
   register({
+    proxy: options.proxy,
     ui: registerUi.call(this),
     server: routes.call(this)
   });
