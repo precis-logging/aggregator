@@ -43,11 +43,20 @@ var AggregatesTable = React.createClass({
       <th key="id">ID</th>,
       <th key="key">Key</th>,
       <th key="name">Name</th>,
+      <th key="stats">Stats</th>,
       <th key="time">Time</th>,
       <th key="environment">Environment</th>,
     ];
     var records = [];
+    var statsListing = ['min','max','count','sum', 'slow'];
+    var inStatList = function(name){
+      return statsListing.indexOf(name)>-1;
+    };
     aggregates.forEach((item, index)=>{
+      var stats = Object.keys(item.stats).filter(inStatList).map((name, index)=>{
+        var value = item.stats[name];
+        return <div key={index}>{name}: {value}</div>;
+      });
       //var toggleRow = <ToggleRow contents={{__html: escapeHTML(JSON.stringify(item, null, '  ')).replace(/\n/g, '<br />')}} colSpan={5} key={index+'-details'} />;
       var toggleRow = (
         <ToggleRow colSpan={5} key={index+'-details'}>
@@ -59,6 +68,7 @@ var AggregatesTable = React.createClass({
           <td>{item._id}</td>
           <td>{item.key}</td>
           <td>{item.name}</td>
+          <td>{stats}</td>
           <td>{new Date(item.time).toLocaleString()}</td>
           <td>{item.environment}</td>
         </tr>
