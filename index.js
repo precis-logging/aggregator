@@ -309,6 +309,28 @@ var registerUi = function(){
           section: 'Aggregations',
           filename: path.resolve(__dirname, 'ui/aggregates.jsx'),
         },
+        {
+          route: '/reports',
+          title: 'Reports',
+          name: 'Reports',
+          section: 'Aggregations',
+          filename: path.resolve(__dirname, 'ui/reports.jsx'),
+        },
+        {
+          route: '/report/:name',
+          name: 'RunReport',
+          filename: path.resolve(__dirname, 'ui/report.jsx'),
+        },
+        {
+          route: '/report/:name/edit',
+          name: 'EditReport',
+          filename: path.resolve(__dirname, 'ui/report.jsx'),
+        },
+        {
+          route: '/report',
+          name: 'CreateReport',
+          filename: path.resolve(__dirname, 'ui/report.jsx'),
+        },
       ]
     },
     {
