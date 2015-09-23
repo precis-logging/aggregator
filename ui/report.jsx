@@ -15,35 +15,163 @@ var {
 
 var {
   addCommas,
-  isNumeric
+  isNumeric,
+  toCSV,
+  omit,
 } = Support;
+
+var ReportDataDownloader = React.createClass({
+  getDownloadFileName(ext){
+    var calculateDatePart = function(){
+      var startDate = this.props.startDate?this.props.startDate:'';
+      var endDate = this.props.endDate?this.props.endDate:'';
+      if(startDate && endDate){
+        if(startDate === endDate){
+          return startDate;
+        }
+        return startDate + ' to ' + endDate;
+      }
+      if(startDate){
+        return startDate;
+      }
+      if(endDate){
+        return endDate;
+      }
+      return '';
+    }.bind(this);
+    return (this.props.aggregateName+' '+calculateDatePart()).trim() + '.' + ext;
+  },
+  downloadRaw(e){
+    e.preventDefault();
+    var rs = this.props.data;
+    var downloadFileName = this.getDownloadFileName('json');
+    var link = document.createElement('a');
+    link.download = downloadFileName;
+    link.href='data:text/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(rs, null, '  '));
+    link.click();
+  },
+  downloadCSV(e){
+    e.preventDefault();
+    var csv = toCSV(this.props.data.map((item)=>{
+      var rec = omit(item, 'processed');
+      rec.processed = item.processed.join(',');
+      return rec;
+    }));
+    var downloadFileName = this.getDownloadFileName('csv');
+    var link = document.createElement('a');
+    link.download = downloadFileName;
+    link.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+    link.click();
+  },
+  render(){
+    var buttons = this.props.data.length?[
+      <button key="download-raw" type="button" className="btn btn-default" onClick={this.downloadRaw}>Download raw JSON</button>,
+      <span key="spacer1">&nbsp;</span>,
+      <button key="download-csv" type="button" className="btn btn-default" onClick={this.downloadCSV}>Download CSV</button>,
+    ]:'';
+    return (
+      <div style={{display: 'inline'}}>
+        {buttons}
+      </div>
+    );
+  }
+});
+
+var Pager = React.createClass({
+  render(){
+    var {
+      offset,
+      limit,
+      count,
+    } = this.props;
+    if((!count) || (!limit) || (limit < 0) || (count < limit)){
+      return <span />;
+    }
+    var pageCount = Math.ceil(count / limit);
+    var currPage = Math.floor(offset / limit)+1;
+    var i = 0;
+
+    var items = [];
+    items.push(<li key="previous" className={offset?'':'disabled'}>
+                  <a href="#" aria-label="Previous" onClick={this.props.previous}>
+                    <span aria-hidden="true">&laquo;</span>
+                  </a>
+                </li>);
+
+    for(i=1; i<=pageCount; i++){
+      items.push(<li key={i} className={currPage===i?'active':''}><a href="#" onClick={this.props.setPage} value={i-1}>{i}</a></li>);
+    }
+
+    items.push(<li key="next" className={(offset+limit < count)?'':'disabled'}>
+                  <a href="#" aria-label="Next" onClick={this.props.next}>
+                    <span aria-hidden="true">&raquo;</span>
+                  </a>
+                </li>);
+    var ul = <ul className="pagination pagination-sm">{items}</ul>;
+    return <nav>{ul}</nav>
+  }
+});
 
 var AggregateStatsTable = React.createClass({
   getInitialState(){
     return {
-      count: true
+      offset: 0,
+      limit: 50,
+      stats: {
+        count: true
+      }
     };
   },
   showHideStat(stat, show){
-    var update = {};
+    var update = this.state.stats;
     update[stat] = show;
-    this.setState(update);
+    this.setState({stats: update});
+  },
+  showItems(offset){
+    this.setState({offset: offset});
+  },
+  next(e){
+    e.preventDefault();
+    var v = this.state.offset+this.state.limit;
+    var max = this.props.data.length-1;
+    this.showItems(v<=max?v:this.state.offset);
+  },
+  previous(e){
+    e.preventDefault();
+    var v = this.state.offset-this.state.limit;
+    this.showItems(v>=0?v:0);
+  },
+  setPage(e){
+    e.preventDefault();
+    var pageNumber = e.target.getAttribute('value');
+    var offset = pageNumber * this.state.limit;
+    this.showItems(offset);
   },
   render(){
-    var stats = Object.keys(this.state);
+    var stats = Object.keys(this.state.stats).filter((name)=>this.state.stats[name]);
     var head = <tr><th>Date</th>{stats.map((name,index)=><th key={index}>{name}</th>)}</tr>;
     var body = [];
+    var pager = '';
     if(this.props.data && this.props.data.length){
-      body = this.props.data.reverse().map((item, index)=>{
+      body = this.props.data.slice(this.state.offset, this.state.offset+this.state.limit).reverse().map((item, index)=>{
         var cells = [<td key="date">{item.time.toLocaleString()}</td>].concat(stats.map((name, index)=>{
           return <td key={index}>{addCommas(item.stats[name]||0)}</td>
         }));
         return <tr key={index}>{cells}</tr>;
       });
+      pager = <Pager
+                next={this.next}
+                previous={this.previous}
+                setPage={this.setPage}
+                offset={this.state.offset}
+                limit={this.state.limit}
+                count={this.props.data.length}
+                />;
     }
     return (
       <div>
-        <StatsCheckList stats={this.props.stats} checked={this.state} statChanged={this.showHideStat} />
+        <StatsCheckList stats={this.props.stats} checked={this.state.stats} statChanged={this.showHideStat} />
+        {pager}
         <table className="table table-striped table-condensed">
           <thead>
             {head}
@@ -52,6 +180,7 @@ var AggregateStatsTable = React.createClass({
             {body}
           </tbody>
         </table>
+        {pager}
       </div>
     );
   }
@@ -229,6 +358,8 @@ var BaseReportPage = React.createClass({
       aggregators: [],
       stats: [],
       samples: [],
+      endDate: (new Date()).toISOString().substr(0, 10),
+      startDate: (new Date()).toISOString().substr(0, 10)
     };
   },
   updateState(Aggregators){
@@ -299,6 +430,9 @@ var BaseReportPage = React.createClass({
       url += '&filter[date][$lte]='+end.toISOString();
     }
     this.loadAllData(url);
+    this.setState({
+      aggregateName: value,
+    })
   },
   aggregatorChange(e){
     e.preventDefault();
@@ -306,6 +440,13 @@ var BaseReportPage = React.createClass({
       stats: [],
       samples: [],
     });
+  },
+  captureChange(e){
+    var field = e.target.id;
+    var value = e.target.value;
+    var update = {};
+    update[field] = value;
+    this.setState(update);
   },
   componentWillUnmount(){
     this.unlisten&&this.unlisten();
@@ -320,22 +461,29 @@ var BaseReportPage = React.createClass({
     });
     var samples = (this.state.samples || []).sort((a, b)=>a.time.getTime()-b.time.getTime());
     var data = samples;
-    var endDate = new Date();
-    //endDate.setDate(endDate.getDate()-1);
-    var startDate = new Date(endDate);
+    var startDate = this.state.startDate;
+    var endDate = this.state.endDate;
     return(
       <div>
         <h1>Report</h1>
         <form onSubmit={this.formSubmit}>
           <label htmlFor="aggregate">Aggregate:</label>
-          <select id="aggregate" className="form-control" ref="aggregator" onChange={this.aggregatorChange}>
+          <select id="aggregateName" className="form-control" ref="aggregator" onChange={this.aggregatorChange}>
             {aggregators}
           </select>
           <label htmlFor="startDate">Start Date:</label>
-          <input id="startDate" ref="startDate" className="form-control" type="date" defaultValue={startDate.toISOString().substr(0, 10)} />
+          <input id="startDate" ref="startDate" className="form-control" type="date" defaultValue={startDate} onChange={this.captureChange} />
           <label htmlFor="endDate">End Date:</label>
-          <input id="endDate" ref="endDate" className="form-control" type="date" defaultValue={endDate.toISOString().substr(0, 10)} />
+          <input id="endDate" ref="endDate" className="form-control" type="date" defaultValue={endDate} onChange={this.captureChange} />
           <button className="btn btn-primary" onClick={this.applyChanges}>View</button>
+          <span>&nbsp;</span>
+          <ReportDataDownloader
+            startDate={this.state.startDate}
+            endDate={this.state.endDate}
+            aggregateName={this.state.aggregateName}
+            data={data}
+            stats={this.state.stats}
+            />
         </form>
         <div ref="views">
           <AggregateLineChart
