@@ -4,7 +4,7 @@ var Page = React.createClass({
     return(
       <div>
         <h1>Reports</h1>
-        <Link to="/report/base">Base Report</Link>
+        <Link to="/report/base">Aggregate Overview Report</Link>
       </div>
     );
   }

@@ -272,6 +272,7 @@ var AggregateLineChart = React.createClass({
             var index = new Date(item.time);
             var value = item.stats[key];
             return {
+              hint: name + ' - ' + addCommas(value) + '\n' + index.toLocaleString(),
               name: name,
               index: index,
               value: value
@@ -296,7 +297,7 @@ var AggregateLineChart = React.createClass({
           return d.index;
         };
         var pointHints = function(d){
-          return d.index.toLocaleString() + ' - ' + addCommas(d.value);
+          return d.hint;//d.index.toLocaleString() + ' - ' + addCommas(d.value);
         };
         var style = {
           '.axis path': 'fill: none; stroke: #000; shape-rendering: crispEdges;',
@@ -354,12 +355,21 @@ var StatsCheckList = React.createClass({
 
 var BaseReportPage = React.createClass({
   getInitialState(){
+    var dt = new Date();
+    var padTo = function(n){
+      var s = n.toString();
+      if(s.length<2){
+        return '0'+s;
+      }
+      return s;
+    };
+    var today = dt.getFullYear()+'-'+padTo(dt.getMonth()+1)+'-'+padTo(dt.getDate());
     return {
       aggregators: [],
       stats: [],
       samples: [],
-      endDate: (new Date()).toISOString().substr(0, 10),
-      startDate: (new Date()).toISOString().substr(0, 10)
+      endDate: today,//(new Date()).toISOString().substr(0, 10),
+      startDate: today,//(new Date()).toISOString().substr(0, 10)
     };
   },
   updateState(Aggregators){
@@ -465,7 +475,7 @@ var BaseReportPage = React.createClass({
     var endDate = this.state.endDate;
     return(
       <div>
-        <h1>Report</h1>
+        <h1>Aggregate Overview Report</h1>
         <form onSubmit={this.formSubmit}>
           <label htmlFor="aggregate">Aggregate:</label>
           <select id="aggregateName" className="form-control" ref="aggregator" onChange={this.aggregatorChange}>
