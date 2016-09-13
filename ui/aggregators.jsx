@@ -52,7 +52,13 @@ var Aggregator = React.createClass({
     try{
       rules = JSON.parse(rules);
     }catch(e){
-      return (callback||noop)(e);
+      try{
+        var f = new Function('', 'return '+rules);
+        rules = f();
+      }catch(e2){
+        return (callback||noop)(e2);
+      }
+      //return (callback||noop)(e);
     }
     info.rule = rules;
     this.updateRecord(info, callback);
