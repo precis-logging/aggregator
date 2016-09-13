@@ -19,7 +19,8 @@ var Aggregator = React.createClass({
       customName: (!!info.name)&&(info.name !== getStatName(info.key||'', info))
     }
   },
-  updateRecord(updates, callback){
+  updateRecord(updates, cb){
+    var callback = cb || noop;
     var record = {};
     var info = this.state.info;
     Object.keys(info).forEach((key)=>{
@@ -38,7 +39,8 @@ var Aggregator = React.createClass({
       return callback(err);
     }.bind(this));
   },
-  saveChanges(callback){
+  saveChanges(cb){
+    var callback = cb || noop;
     var rules = this.refs.rules.getDOMNode().value;
     var info = {};
     info.key = this.refs.key.getDOMNode().value;
@@ -46,10 +48,10 @@ var Aggregator = React.createClass({
     var minsSelect = this.refs.aggregateByMinutes.getDOMNode();
     info.aggregateByMinutes = parseInt(minsSelect.options[minsSelect.selectedIndex].value||'15');
     if(!info.key){
-      return (callback||noop)(new Error('Key is required'));
+      return (callback)(new Error('Key is required'));
     }
     if(!info.name){
-      return (callback||noop)(new Error('Name is required'));
+      return (callback)(new Error('Name is required'));
     }
     try{
       rules = JSON.parse(rules);
@@ -58,9 +60,8 @@ var Aggregator = React.createClass({
         var f = new Function('', 'return '+rules);
         rules = f();
       }catch(e2){
-        return (callback||noop)(e2);
+        return (callback)(e2);
       }
-      //return (callback||noop)(e);
     }
     info.rule = rules;
     this.updateRecord(info, callback);
