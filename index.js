@@ -39,7 +39,7 @@ var encodeRecord = function(rec, _idOk){
     if((key === '_id') && (!_idOk)){
       return;
     }
-    var newKey = key.replace(/^\$/, '\\$');
+    var newKey = key.replace(/^\$/, '\\$').replace(/\./g, '__dot__');
     res[newKey] = encodeRecord(rec[key]);
   });
   return res;
