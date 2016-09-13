@@ -4,11 +4,12 @@
   "description": "Precis Aggregator groups log enries based on pattern matching into aggregates",
   "main": "index.js",
   "scripts": {
-    "test": "./node_modules/mocha/bin/mocha test"
+    "test": "./node_modules/mocha/bin/mocha test",
+    "start": "node server.js"
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:precis-logging/aggregator.git"
+    "url": "git+ssh://git@github.com/precis-logging/aggregator.git"
   },
   "keywords": [
     "Precis",
