@@ -83,7 +83,7 @@ First up is the filter:
 },
 ```
 
-The filter is a Sift.js JSON object that is used to determine if a record meets the conditions to be considered part of the Aggregate.  In this case we are looking for records with;
+The filter is a [Sift.js](https://github.com/crcn/sift.js) JSON object that is used to determine if a record meets the conditions to be considered part of the Aggregate.  In this case we are looking for records with;
 
   * a data.Method member of "GET"
   * one of the data members to be a string with the value "Inbound completed: "
