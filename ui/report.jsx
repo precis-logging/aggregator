@@ -421,13 +421,14 @@ var BaseReportPage = React.createClass({
   },
   loadStats(){
     var value = this.refs.aggregator.getDOMNode().value;
+console.log(value);
     if(!value){
       return this.setState({
         stats: [],
         samples: [],
       });
     }
-    var url = '/api/v1/aggregates?&sort[time]=-1&filter[name]='+encodeURIComponent(value);
+    var url = '/api/v1/aggregates?&sort[time]=-1&filter[key]='+encodeURIComponent(value);
     var start = Date.parse(this.refs.startDate.getDOMNode().value);
     var end = Date.parse(this.refs.endDate.getDOMNode().value);
     if(!isNaN(start)){
@@ -467,9 +468,16 @@ var BaseReportPage = React.createClass({
   render(){
     var aggregators = this.state.aggregators.map((agg)=>{
       var state = agg.deleted?' (deleted)':agg.disabled?' (disabled)':'';
-      return <option key={agg.key} value={agg.name}>{agg.name}{state}</option>
+      return <option key={agg.key} value={agg.key}>{agg.name}{state}</option>
     });
-    var samples = (this.state.samples || []).sort((a, b)=>a.time.getTime()-b.time.getTime());
+    var samples = (this.state.samples || []).sort((a, b)=>{
+      var aTime = a.time.getTime();
+      var bTime = b.time.getTime();
+      if(aTime === bTime){
+        return a.processed.length - b.processed.length;
+      }
+      return aTime-bTime;
+    });
     var data = samples;
     var startDate = this.state.startDate;
     var endDate = this.state.endDate;
@@ -562,13 +570,16 @@ var EditPage = React.createClass({
   },
   loadStats(){
     var value = this.refs.aggregator.getDOMNode().value;
+
+console.log(value);
+
     if(!value){
       return this.setState({
         stats: [],
         samples: [],
       });
     }
-    var url = '/api/v1/aggregates?&sort[time]=-1&filter[name]='+encodeURIComponent(value);
+    var url = '/api/v1/aggregates?&sort[time]=-1&filter[key]='+encodeURIComponent(value);
     var start = Date.parse(this.refs.startDate.getDOMNode().value);
     var end = Date.parse(this.refs.endDate.getDOMNode().value);
     if(!isNaN(start)){
@@ -608,7 +619,7 @@ var EditPage = React.createClass({
   render(){
     var aggregators = this.state.aggregators.map((agg)=>{
       var state = agg.deleted?' (deleted)':agg.disabled?' (disabled)':'';
-      return <option key={agg.key} value={agg.name}>{agg.name}{state}</option>
+      return <option key={agg.key} value={agg.key}>{agg.name}{state}</option>
     });
     var stats = Object.keys(this.state.stats).map((stat)=>{
       return <label key={"stat_"+stat} htmlFor={"stat_"+stat}><input type="checkbox" name="stats" id={"stat_"+stat} value={stat} />{stat}</label>

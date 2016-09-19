@@ -387,12 +387,28 @@ Plugin.prototype.register = function(options){
   });
 };
 
+var queueStatus = (function(){
+  var timer = false;
+  return function(rec, depth){
+    if(timer){
+      return;
+    }
+    if(rec && rec.dateTime && (depth > 100)){
+      console.log(rec.dateTime, 'depth: ', depth);
+      timer = setTimeout(function(){
+        timer = false;
+      }, 10000);
+    }
+  };
+})();
+
 Plugin.prototype.push = function(record){
   if(!this.handler){
     return setImmediate(function(){
       this.push(record);
     }.bind(this));
   }
+  queueStatus(record, this.handler.q.length());
   this.handler.push(record);
 };
 
