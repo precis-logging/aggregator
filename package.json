@@ -1,6 +1,6 @@
 {
   "name": "precis-aggregator",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "Precis Aggregator groups log enries based on pattern matching into aggregates",
   "main": "index.js",
   "scripts": {
