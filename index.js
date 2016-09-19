@@ -5,6 +5,7 @@ var utils = require('./lib/utils');
 var isTrue = utils.isTrue;
 var defaults = utils.defaults;
 var path = require('path');
+var queueStatus = require('./lib/queuestatus');
 
 var fetchAll = function(from, callback){
   var results = [];
@@ -386,21 +387,6 @@ Plugin.prototype.register = function(options){
     server: routes.call(this)
   });
 };
-
-var queueStatus = (function(){
-  var timer = false;
-  return function(rec, depth){
-    if(timer){
-      return;
-    }
-    if(rec && rec.dateTime && (depth > 100)){
-      console.log(rec.dateTime, 'depth: ', depth);
-      timer = setTimeout(function(){
-        timer = false;
-      }, 10000);
-    }
-  };
-})();
 
 Plugin.prototype.push = function(record){
   if(!this.handler){

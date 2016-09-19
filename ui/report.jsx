@@ -392,6 +392,7 @@ var BaseReportPage = React.createClass({
     }.bind(this));
   },
   loadAllData(baseUrl){
+    this.setState({loading: true});
     var records = [], stats = {};
     var getBlock = function(offset){
       Loader.get(baseUrl+'&offset='+offset, function(err, raw){
@@ -414,18 +415,18 @@ var BaseReportPage = React.createClass({
             }, 1);
           }
         }
-        this.setState({stats: stats||{}, samples: records});
+        this.setState({stats: stats||{}, samples: records, loading: false});
       }.bind(this));
     }.bind(this);
     getBlock(0);
   },
   loadStats(){
     var value = this.refs.aggregator.getDOMNode().value;
-console.log(value);
     if(!value){
       return this.setState({
         stats: [],
         samples: [],
+        loading: false,
       });
     }
     var url = '/api/v1/aggregates?&sort[time]=-1&filter[key]='+encodeURIComponent(value);
@@ -481,6 +482,22 @@ console.log(value);
     var data = samples;
     var startDate = this.state.startDate;
     var endDate = this.state.endDate;
+    var viewData = this.state.loading?'Loading...':(
+      <div ref="views">
+        <AggregateLineChart
+          data={data}
+          stats={this.state.stats}
+          />
+        <AggregatePieChart
+          data={data}
+          stats={this.state.stats}
+          />
+        <AggregateStatsTable
+          data={data}
+          stats={this.state.stats}
+          />
+      </div>
+    );
     return(
       <div>
         <h1>Aggregate Overview Report</h1>
@@ -503,20 +520,7 @@ console.log(value);
             stats={this.state.stats}
             />
         </form>
-        <div ref="views">
-          <AggregateLineChart
-            data={data}
-            stats={this.state.stats}
-            />
-          <AggregatePieChart
-            data={data}
-            stats={this.state.stats}
-            />
-          <AggregateStatsTable
-            data={data}
-            stats={this.state.stats}
-            />
-        </div>
+        {viewData}
       </div>
     );
   }
