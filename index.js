@@ -173,6 +173,33 @@ var getAggregateRecordsHandler = function(req, reply){
   });
 };
 
+var getAggregateStatsHandler = function(req, reply){
+  var key = req.params.keyOrName;
+  var opts = defaults({filter: {$or: [{key: key}, {name: key}]}}, req.query);
+  var onlyStats = function(record){
+    return {
+      key: record.key,
+      date: record.date,
+      time: record.time,
+      stats: record.stats,
+    };
+  };
+  this.aggregatesStore.asArray(opts, function(err, res){
+    if(err){
+      return reply(err.toString());
+    }
+    var records = res[res.root];
+    var response = {
+      root: 'records',
+      records: records.map(onlyStats),
+      limit: res.limit,
+      offset: res.offset,
+      count: res.count,
+    };
+    return reply(response);
+  });
+};
+
 var routes = function(){
   return [
     {
@@ -211,6 +238,27 @@ var routes = function(){
           },
         },
         handler: getAggregateRecordsHandler.bind(this)
+      }
+    },
+    {
+      method: 'GET',
+      path: '/api/v1/aggregator/{keyOrName}/stats',
+      config: {
+        description: 'Get aggregate stats for {keyOrName}',
+        tags: ['api'],
+        validate: {
+          params: {
+            keyOrName: Joi.string().required(),
+          },
+          query: {
+            offset: Joi.number().optional(),
+            limit: Joi.number().min(1).max(10000).optional(),
+            ts: Joi.any().optional(),
+            filter: Joi.any().optional(),
+            sort: Joi.any().optional(),
+          },
+        },
+        handler: getAggregateStatsHandler.bind(this)
       }
     },
     {

@@ -429,7 +429,8 @@ var BaseReportPage = React.createClass({
         loading: false,
       });
     }
-    var url = '/api/v1/aggregates?&sort[time]=-1&filter[key]='+encodeURIComponent(value);
+    //var url = '/api/v1/aggregates?&sort[time]=-1&filter[key]='+encodeURIComponent(value);
+    var url = '/api/v1/aggregator/'+encodeURIComponent(value)+'/stats?&sort[time]=-1';
     var start = Date.parse(this.refs.startDate.getDOMNode().value);
     var end = Date.parse(this.refs.endDate.getDOMNode().value);
     if(!isNaN(start)){
